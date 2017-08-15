@@ -3,11 +3,12 @@ import logo from './logo.svg';
 import './App.css';
 
 const DEFAULT_QUERY = 'redux';
+const DEFAULT_PAGE = 0;
 
 const PATH_BASE = 'https://hn.algolia.com/api/v1';
 const PATH_SEARCH = '/search';
 const PARAM_SEARCH = 'query=';
-const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}`;
+const PARAM_PAGE = 'page=';
 
 class App extends Component {
 
@@ -21,8 +22,9 @@ class App extends Component {
 
     this.setSearchTopStories = this.setSearchTopStories.bind(this);
     this.fetchSearchTopStories = this.fetchSearchTopStories.bind(this);
-    this.onDismiss = this.onDismiss.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
+    this.onSearchSubmit = this.onSearchSubmit.bind(this);
+    this.onDismiss = this.onDismiss.bind(this);
   }
 
   setSearchTopStories(result) {
@@ -54,10 +56,15 @@ class App extends Component {
     this.setState({searchTerm: event.target.value});
   }
 
+  onSearchSubmit(event) {
+    const { searchTerm } = this.state;
+    this.fetchSearchTopStories(searchTerm);
+    event.preventDefault();
+  }
+
   render() {
     const pageTitle = "Hacker News";
     const { searchTerm, result } = this.state;
-    console.log(this.state)
     if (!result) { return null; }
 
     return (
@@ -67,13 +74,13 @@ class App extends Component {
           <Search
             value={searchTerm}
             onChange={this.onSearchChange}
+            onSubmit={this.onSearchSubmit}
           >
             Search
           </Search>
         </div>
         <Table
-          result={result.hits}
-          pattern={searchTerm}
+          list={result.hits}
           onDismiss={this.onDismiss}
         />
       </div>
@@ -81,19 +88,27 @@ class App extends Component {
   }
 }
 
-const Search = ({ value, onChange, children }) => {
+const Search = ({
+  value,
+  onChange,
+  onSubmit,
+  children
+}) => {
   return (
-    <form>
-    {children} <input
+    <form onSubmit={onSubmit}>
+      <input
         type="text"
         value={value}
         onChange={onChange}
       />
+      <button type="submit">
+        {children}
+      </button>
     </form>
   );
 }
 
-const Table = ({ result, pattern, onDismiss }) => {
+const Table = ({ list, onDismiss }) => {
   const isSearched = (searchTerm) => (item) =>
     !searchTerm || item.title.toLowerCase().includes(searchTerm.toLowerCase());
   const largeColumn = {
@@ -108,7 +123,7 @@ const Table = ({ result, pattern, onDismiss }) => {
 
   return (
     <div className="table">
-      { result.filter(isSearched(pattern)).map(item =>
+      { list.map(item =>
         <div key={item.objectID} className="table-row">
           <span style={largeColumn}>
             <a href={item.url}>{item.title}</a>
